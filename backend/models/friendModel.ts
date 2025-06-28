@@ -32,3 +32,33 @@ export const areFriends = async (userId: number, friendId: number) => {
   );
   return (rows as any[]).length > 0;
 };
+
+export const searchUsers = async (userId: number, query: string) => {
+  const [rows] = await db.execute(`
+    SELECT u.id, u.email
+    FROM users u
+    WHERE u.email LIKE ? 
+      AND u.id != ?
+      AND u.id NOT IN (
+        SELECT friend_id FROM friends WHERE user_id = ?
+      )
+    ORDER BY u.email ASC
+    LIMIT 10
+  `, [`%${query}%`, userId, userId]);
+  
+  return rows;
+};
+
+export const getAvailableUsers = async (userId: number) => {
+  const [rows] = await db.execute(`
+    SELECT u.id, u.email
+    FROM users u
+    WHERE u.id != ?
+      AND u.id NOT IN (
+        SELECT friend_id FROM friends WHERE user_id = ?
+      )
+    ORDER BY u.email ASC
+  `, [userId, userId]);
+  
+  return rows;
+};

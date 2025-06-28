@@ -12,7 +12,12 @@ interface Post {
   userLiked: number;
 }
 
-export default function Home() {
+interface HomeProps {
+  onNavigateFriends: () => void;
+  onNavigateProfile: () => void;
+}
+
+export default function Home({ onNavigateFriends, onNavigateProfile }: HomeProps) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
@@ -107,13 +112,29 @@ export default function Home() {
                 MediaShare
               </h1>
             </div>
-            <button
-              onClick={handleLogout}
-              className="flex items-center space-x-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200 shadow-sm"
-            >
-              <span>🚪</span>
-              <span>Logout</span>
-            </button>
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={onNavigateFriends}
+                className="flex items-center space-x-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200 shadow-sm"
+              >
+                <span>👥</span>
+                <span>Friends</span>
+              </button>
+              <button
+                onClick={onNavigateProfile}
+                className="flex items-center space-x-2 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors duration-200 shadow-sm"
+              >
+                <span>👤</span>
+                <span>Profile</span>
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex items-center space-x-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200 shadow-sm"
+              >
+                <span>🚪</span>
+                <span>Logout</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>

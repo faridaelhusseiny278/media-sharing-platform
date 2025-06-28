@@ -22,8 +22,59 @@ export const getAllPosts = async (userId: number) => {
        OR p.user_id IN (
          SELECT friend_id FROM friends WHERE user_id = ?
        )
-    ORDER BY p.created_at DESC
   `, [userId, userId, userId]);
+  
+  return rows;
+};
+
+export const getMyPosts = async (userId: number) => {
+  // Get user's own posts with stats
+  const [posts] = await db.execute(`
+    SELECT p.*, 
+      u.email as user_email,
+      (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) as likes_count,
+      (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id AND user_id = ?) as is_liked
+    FROM posts p 
+    JOIN users u ON p.user_id = u.id
+    WHERE p.user_id = ?
+  `, [userId, userId]);
+
+  // Get stats
+  const [statsResult] = await db.execute(`
+    SELECT 
+      (SELECT COUNT(*) FROM posts WHERE user_id = ?) as totalPosts,
+      (SELECT COUNT(*) FROM post_likes pl JOIN posts p ON pl.post_id = p.id WHERE p.user_id = ?) as totalLikes,
+      (SELECT COUNT(*) FROM post_likes WHERE user_id = ?) as totalLikedPosts
+  `, [userId, userId, userId]);
+
+  const stats = (statsResult as any[])[0];
+  const postsArray = posts as any[];
+
+  return {
+    posts: postsArray.map((post: any) => ({
+      ...post,
+      is_liked: post.is_liked > 0
+    })),
+    stats: {
+      totalPosts: stats.totalPosts,
+      totalLikes: stats.totalLikes,
+      totalLikedPosts: stats.totalLikedPosts
+    }
+  };
+};
+
+export const getLikedPosts = async (userId: number) => {
+  // Get posts that the user has liked
+  const [rows] = await db.execute(`
+    SELECT p.*, 
+      u.email as user_email,
+      (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) as likes_count,
+      1 as is_liked
+    FROM posts p 
+    JOIN users u ON p.user_id = u.id
+    JOIN post_likes pl ON p.id = pl.post_id
+    WHERE pl.user_id = ?
+  `, [userId]);
   
   return rows;
 };

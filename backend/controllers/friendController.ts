@@ -99,21 +99,27 @@ export const searchUsers = async (req: Request, res: Response) => {
       return;
     }
 
-    // Search users by email (excluding current user and existing friends)
-    const [rows] = await (await import('../models/db')).db.execute(`
-      SELECT u.id, u.email, u.created_at
-      FROM users u
-      WHERE u.email LIKE ? 
-        AND u.id != ?
-        AND u.id NOT IN (
-          SELECT friend_id FROM friends WHERE user_id = ?
-        )
-      LIMIT 10
-    `, [`%${query}%`, userId, userId]);
-
-    res.status(200).json(rows);
+    const users = await FriendModel.searchUsers(userId, query);
+    res.status(200).json(users);
   } catch (error) {
     console.error('Error searching users:', error);
     res.status(500).json({ error: 'Error searching users' });
+  }
+};
+
+export const getAllUsers = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+
+    if (!userId) {
+      res.status(401).json({ error: 'User not authenticated' });
+      return;
+    }
+
+    const users = await FriendModel.getAvailableUsers(userId);
+    res.status(200).json(users);
+  } catch (error) {
+    console.error('Error getting all users:', error);
+    res.status(500).json({ error: 'Error getting all users' });
   }
 }; 

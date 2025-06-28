@@ -40,3 +40,35 @@ export const getPosts = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Error retrieving posts' });
   }
 };
+
+export const getMyPosts = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      res.status(401).json({ error: 'User not authenticated' });
+      return;
+    }
+
+    const result = await PostModel.getMyPosts(userId);
+    res.status(200).json(result);
+  } catch (error) {
+    console.error('Error retrieving my posts:', error);
+    res.status(500).json({ error: 'Error retrieving my posts' });
+  }
+};
+
+export const getLikedPosts = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      res.status(401).json({ error: 'User not authenticated' });
+      return;
+    }
+
+    const posts = await PostModel.getLikedPosts(userId);
+    res.status(200).json(posts);
+  } catch (error) {
+    console.error('Error retrieving liked posts:', error);
+    res.status(500).json({ error: 'Error retrieving liked posts' });
+  }
+};
