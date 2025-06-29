@@ -30,6 +30,9 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       res.status(401).json({ error: 'Invalid credentials' });
       return;
     }
+    console.log("Stored hash from DB:", user.password);
+    console.log("Password entered:", password);
+
 
     const valid = await bcrypt.compare(password, user.password);
     console.log('Password valid:', valid); // Debugging line

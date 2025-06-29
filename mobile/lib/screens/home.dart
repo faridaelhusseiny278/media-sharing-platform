@@ -28,10 +28,13 @@ class _HomePageState extends State<HomePage> {
   final postService = PostService();
   final likeService = LikeService();
 
+
   List<Post> posts = [];
+  List<int> myPostIds = [];
   File? selectedFile;
   bool loading = false;
   String error = '';
+  bool isMine = false;
 
 
   @override
@@ -40,6 +43,7 @@ class _HomePageState extends State<HomePage> {
     fetchPosts();
   }
 
+
   Future<void> fetchPosts() async {
     setState(() {
       loading = true;
@@ -47,13 +51,49 @@ class _HomePageState extends State<HomePage> {
     });
     try {
       final data = await postService.fetchPosts();
-      setState(() => posts = data);
+      final myPosts = await postService.getMyPosts();
+      setState(() {
+        posts = data;
+        myPostIds = myPosts.map((post) => post.id).toList();
+        print('My post IDs: $myPostIds');
+      });
     } catch (e) {
       setState(() => error = e.toString());
     } finally {
       setState(() => loading = false);
     }
   }
+
+
+  Future<void> handleDelete(Post post) async {
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Are you sure?'),
+        content: const Text('This post will be permanently deleted.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDelete == true) {
+      try {
+        await postService.deletePost(post.id);
+        fetchPosts();
+      } catch (e) {
+        setState(() => error = e.toString());
+      }
+    }
+  }
+
 
   Future<void> pickFile() async {
     final picker = ImagePicker();
@@ -165,16 +205,21 @@ class _HomePageState extends State<HomePage> {
                   ListTile(
                     leading: const CircleAvatar(child: Icon(Icons.person)),
                     title: Text(post.userEmail),
-                    subtitle: Text(post.createdAt.toString()),
-
+                    subtitle: Text(formatDate(post.createdAt.toString())),
+                    trailing: myPostIds.contains(post.id)
+                        ? IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      onPressed: () => handleDelete(post),
+                    )
+                        : null,
                   ),
                   post.filepath.endsWith('.mp4')
-                  ? VideoPlayerWidget(url: 'http://192.168.100.6:5000/uploads/${post.filepath}')
+                      ? VideoPlayerWidget(url: 'http://192.168.100.6:5000/uploads/${post.filepath}')
                       : Image.network(
-                  'http://192.168.100.6:5000/uploads/${post.filepath}',
-                  height: 200,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
+                    'http://192.168.100.6:5000/uploads/${post.filepath}',
+                    height: 200,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
                   ),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
@@ -192,6 +237,7 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
             )),
+
           ],
         ),
       ),

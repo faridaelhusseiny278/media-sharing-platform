@@ -100,3 +100,12 @@ export const hasUserLikedPost = async (postId: number, userId: number) => {
   );
   return (rows as any[]).length > 0;
 };
+
+export const getPostById = async (postId: number) => {
+  const [rows] = await db.execute('SELECT * FROM posts WHERE id = ?', [postId]);
+  return (rows as any[])[0]; // or define Post interface
+};
+
+export const deletePost = async (postId: number) => {
+  await db.execute('DELETE FROM posts WHERE id = ?', [postId]);
+};

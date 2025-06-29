@@ -25,7 +25,7 @@ class PostService {
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);
-      final List<dynamic> postsJson = data['posts']; // ✅ extract list from map
+      final List<dynamic> postsJson = data['posts'];
 
       print('Fetched my posts: $postsJson');
       return postsJson.map((json) => Post.fromJson(json)).toList();
@@ -58,4 +58,27 @@ class PostService {
       throw Exception('Failed to upload post');
     }
   }
+
+  Future<void> deletePost(int postId) async {
+    print('Dropping post with ID: $postId');
+    final response = await api.delete('/posts/$postId');
+
+    print('Delete response status: ${response.statusCode}');
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to delete post');
+    }
+  }
+
+  // Future<bool> isMine(int postId) async {
+  //   final response = await api.get('/posts/is-mine/$postId');
+  //   if (response.statusCode == 200) {
+  //     final data = json.decode(response.body);
+  //     return data['isMine'] ?? false;
+  //   } else {
+  //     throw Exception('Failed to check ownership of post');
+  //   }
+  // }
+
+
 }

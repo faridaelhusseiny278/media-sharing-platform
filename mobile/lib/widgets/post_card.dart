@@ -5,11 +5,13 @@ import 'package:media_sharing_app/widgets/video_player.dart';
 class PostCard extends StatelessWidget {
   final Post post;
   final VoidCallback onLikeToggle;
+  final VoidCallback? onDelete;
 
   const PostCard({
     super.key,
     required this.post,
     required this.onLikeToggle,
+    this.onDelete,
   });
 
   @override
@@ -20,6 +22,7 @@ class PostCard extends StatelessWidget {
       elevation: 3,
       margin: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
+
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Display image or placeholder for video
@@ -62,6 +65,37 @@ class PostCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
+          if (onDelete != null)
+            Padding(
+              padding: const EdgeInsets.only(left: 12, bottom: 8),
+              child: TextButton.icon(
+                onPressed: () async {
+                  final shouldDelete = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Are you sure?'),
+                      content: const Text('This post will be permanently deleted.'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  if (shouldDelete == true) {
+                    onDelete!();
+                  }
+                },
+                icon: const Icon(Icons.delete, color: Colors.red),
+                label: const Text("Delete", style: TextStyle(color: Colors.red)),
+              ),
+            ),
         ],
       ),
     );

@@ -38,6 +38,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     fetchUserPosts();
+    fetchLikedPosts();
   }
 
   Future<void> fetchUserPosts() async {
@@ -61,24 +62,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  Future<void> fetchLikedPosts() async {
-    setState(() {
-      isLoading = true;
-      error = '';
-    });
-
+  Future<void> fetchLikedPosts({bool updateList = false}) async {
     try {
       final data = await postService.getLikedPosts();
       setState(() {
-        posts = data;
         totalLikedPosts = data.length;
+        if (updateList) {
+          posts = data;
+        }
       });
     } catch (e) {
       setState(() => error = e.toString());
-    } finally {
-      setState(() => isLoading = false);
     }
   }
+
 
   void toggleTab(String tab) {
     if (tab == activeTab) return;
@@ -90,7 +87,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (tab == 'posts') {
       fetchUserPosts();
     } else {
-      fetchLikedPosts();
+      fetchLikedPosts(updateList: true);
     }
   }
 
@@ -216,6 +213,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
             setState(() => error = "Failed to toggle like");
           }
         },
+        onDelete: activeTab == 'posts'
+            ? () async {
+          try {
+            await postService.deletePost(posts[index].id);
+            fetchUserPosts(); // refresh
+          } catch (e) {
+            setState(() => error = "Failed to delete post");
+          }
+        }
+            : null, // disable delete button in liked tab
       ),
     );
   }

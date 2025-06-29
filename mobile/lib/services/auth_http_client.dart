@@ -29,6 +29,12 @@ class ApiClient {
       body: body != null ? jsonEncode(body) : null,
     );
   }
+
+  Future<http.Response> delete(String path) async {
+    final headers = await _getHeaders();
+    return http.delete(Uri.parse('$baseUrl$path'), headers: headers);
+  }
+
   Future<http.StreamedResponse> uploadFile(
       String endpoint,
       Map<String, String> fields,
