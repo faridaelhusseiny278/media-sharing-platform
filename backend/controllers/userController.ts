@@ -25,12 +25,14 @@ export const login = async (req: Request, res: Response): Promise<void> => {
   const { email, password } = req.body;
   try {
     const user = await UserModel.getUserByEmail(email);
+    
     if (!user) {
       res.status(401).json({ error: 'Invalid credentials' });
       return;
     }
 
     const valid = await bcrypt.compare(password, user.password);
+    console.log('Password valid:', valid); // Debugging line
     if (!valid) {
       res.status(401).json({ error: 'Invalid credentials' });
       return;
@@ -66,4 +68,27 @@ export const getUserProfile = async (req: Request, res: Response): Promise<void>
   } catch (error) {
     res.status(500).json({ error: 'Error retrieving user profile' });
   }
-};
+}
+
+  // get user by email
+  export const getUserByEmail = async (req: Request, res: Response): Promise<void> => {
+    const email = (req as any).user.email;
+    console.log('Getting user by email:', email);
+    try {
+      
+      const user = await UserModel.getUserByEmail(email);
+  
+      if (!user) {
+        res.status(404).json({ error: 'User not found' });
+        return;
+      }
+  
+      // Exclude password
+      const { password, ...userWithoutPassword } = user;
+      res.status(200).json(userWithoutPassword);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Error retrieving user by email' });
+    }
+  };
+  

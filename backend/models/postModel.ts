@@ -32,8 +32,8 @@ export const getMyPosts = async (userId: number) => {
   const [posts] = await db.execute(`
     SELECT p.*, 
       u.email as user_email,
-      (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) as likes_count,
-      (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id AND user_id = ?) as is_liked
+      (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) as likeCount,
+      (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id AND user_id = ?) as userLiked
     FROM posts p 
     JOIN users u ON p.user_id = u.id
     WHERE p.user_id = ?
@@ -53,7 +53,7 @@ export const getMyPosts = async (userId: number) => {
   return {
     posts: postsArray.map((post: any) => ({
       ...post,
-      is_liked: post.is_liked > 0
+      userLiked: post.userLiked
     })),
     stats: {
       totalPosts: stats.totalPosts,
@@ -68,8 +68,8 @@ export const getLikedPosts = async (userId: number) => {
   const [rows] = await db.execute(`
     SELECT p.*, 
       u.email as user_email,
-      (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) as likes_count,
-      1 as is_liked
+      (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) as likeCount,
+      1 as userLiked
     FROM posts p 
     JOIN users u ON p.user_id = u.id
     JOIN post_likes pl ON p.id = pl.post_id

@@ -19,5 +19,7 @@ router.get('/', (req, res) => {
 router.post('/register', userController.register);
 router.post('/login', userController.login);
 router.get('/profile', authenticateToken, userController.getUserProfile);
+// create a router to get user by email
+router.get('/email', authenticateToken, userController.getUserByEmail);
 
 export default router;

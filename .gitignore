@@ -28,3 +28,40 @@ backend/uploads
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+
+
+# Dart & Flutter
+mobile/.dart_tool/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/.packages
+mobile/.buildlog
+mobile/.metadata
+
+# Build outputs
+mobile/build/
+mobile/ios/Flutter/Flutter.framework
+mobile/ios/Flutter/Flutter.podspec
+mobile/android/.gradle/
+mobile/android/app/build/
+mobile/windows/
+mobile/web/
+mobile/macos/
+mobile/linux/
+
+# IDE & Editor settings
+mobile/.idea/
+mobile/*.iml
+
+# Dependency files (if not locking versions across team)
+mobile/pubspec.lock
+mobile/package-lock.json
+
+# VS Code
+mobile/.vscode/
+
+# OS generated files
+mobile/.DS_Store
+mobile/Thumbs.db
+
