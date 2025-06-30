@@ -215,9 +215,9 @@ export default function Friends({ onNavigateHome, onNavigateProfile }: FriendsPr
                         </div>
                         <div>
                           <div className="font-semibold text-gray-800">{friend.email}</div>
-                          <div className="text-sm text-gray-500">
+                          {/* <div className="text-sm text-gray-500">
                             Friend since {formatDate(friend.created_at)}
-                          </div>
+                          </div> */}
                         </div>
                       </div>
                       <button
@@ -300,9 +300,9 @@ export default function Friends({ onNavigateHome, onNavigateProfile }: FriendsPr
                         </div>
                         <div>
                           <div className="font-semibold text-gray-800">{user.email}</div>
-                          <div className="text-sm text-gray-500">
+                          {/* <div className="text-sm text-gray-500">
                             Joined {formatDate(user.created_at)}
-                          </div>
+                          </div> */}
                         </div>
                       </div>
                       <button
