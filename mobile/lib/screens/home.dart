@@ -7,6 +7,13 @@ import '../services/post_service.dart';
 import '../services/like_service.dart';
 import 'package:video_player/video_player.dart';
 import '../widgets/video_player.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:image/image.dart' as img;
+import 'package:path/path.dart' as path;
+import 'package:permission_handler/permission_handler.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:media_sharing_app/widgets/post_card.dart';
+import 'package:media_sharing_app/main.dart';
 
 class HomePage extends StatefulWidget {
   final VoidCallback onNavigateFriends;
@@ -21,10 +28,11 @@ class HomePage extends StatefulWidget {
   });
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<HomePage> createState() => HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class HomePageState extends State<HomePage> with RouteAware {
+
   final postService = PostService();
   final likeService = LikeService();
 
@@ -43,6 +51,24 @@ class _HomePageState extends State<HomePage> {
     fetchPosts();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
+  }
+
+  @override
+  void dispose() {
+    routeObserver.unsubscribe(this);
+    super.dispose();
+  }
+  @override
+  void didPopNext() {
+    // Called when returning to this page (e.g., via back button)
+    fetchPosts();
+  }
+
+
 
   Future<void> fetchPosts() async {
     setState(() {
@@ -52,6 +78,9 @@ class _HomePageState extends State<HomePage> {
     try {
       final data = await postService.fetchPosts();
       final myPosts = await postService.getMyPosts();
+
+      data.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
       setState(() {
         posts = data;
         myPostIds = myPosts.map((post) => post.id).toList();
@@ -66,42 +95,90 @@ class _HomePageState extends State<HomePage> {
 
 
   Future<void> handleDelete(Post post) async {
-    final shouldDelete = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Are you sure?'),
-        content: const Text('This post will be permanently deleted.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-
-    if (shouldDelete == true) {
-      try {
-        await postService.deletePost(post.id);
-        fetchPosts();
-      } catch (e) {
-        setState(() => error = e.toString());
-      }
+    try {
+      await postService.deletePost(post.id);
+      fetchPosts();
+    } catch (e) {
+      setState(() => error = e.toString());
     }
   }
+
+
+  Future<File> compressImage(File file) async {
+    final bytes = await file.readAsBytes();
+    final image = img.decodeImage(bytes);
+    final resized = img.copyResize(image!, width: 800);
+
+    final dir = await getTemporaryDirectory();
+    final newPath = path.join(dir.path, 'compressed_${DateTime.now().millisecondsSinceEpoch}.jpg');
+    final compressed = File(newPath)..writeAsBytesSync(img.encodeJpg(resized, quality: 85));
+    return compressed;
+  }
+
 
 
   Future<void> pickFile() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery);
-    if (picked != null) {
-      setState(() => selectedFile = File(picked.path));
+    final status = Platform.isAndroid
+        ? await Permission.storage.request()
+        : await Permission.photos.request();
+
+    if (!status.isGranted) {
+      setState(() => error = 'Permission denied.');
+      return;
+    }
+
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['jpg', 'png', 'jpeg', 'mp4', 'mov', 'avi', 'webm'],
+    );
+
+    if (result != null && result.files.isNotEmpty) {
+      final picked = result.files.single;
+      final file = File(picked.path!);
+      final extension = picked.extension?.toLowerCase();
+
+      File fileToUpload;
+      if (extension == 'jpg' || extension == 'jpeg' || extension == 'png') {
+        final compressed = await compressImage(file);
+        fileToUpload = compressed;
+      } else if (['mp4', 'mov', 'avi', 'webm'].contains(extension)) {
+        fileToUpload = file;
+      } else {
+        setState(() => error = 'Unsupported file type: $extension');
+        return;
+      }
+
+      setState(() {
+        selectedFile = fileToUpload;
+      });
+
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Preview File'),
+          content: (extension == 'jpg' || extension == 'jpeg' || extension == 'png')
+              ? Image.file(fileToUpload)
+              : VideoPlayerWidget(file: fileToUpload),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.of(context).pop();
+                handleUpload(); // Make sure it handles video uploads
+              },
+              icon: const Icon(Icons.upload),
+              label: const Text('Upload'),
+            ),
+          ],
+        ),
+      );
     }
   }
+
+
 
   Future<void> handleUpload() async {
     if (selectedFile == null) return;
@@ -119,10 +196,7 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> toggleLike(Post post) async {
     try {
-      // print post.userLiked
-      print('post.userLiked: ${post.userLiked}');
-      // print the type of post.userLiked
-      print('post.userLiked type: ${post.userLiked.runtimeType}');
+
       // first convert userliked to int
       if (post.userLiked == 1)
       {
@@ -153,8 +227,15 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: const Text('MediaShare'),
         actions: [
-          IconButton(icon: const Icon(Icons.group), onPressed: widget.onNavigateFriends),
-          IconButton(icon: const Icon(Icons.person), onPressed: widget.onNavigateProfile),
+          IconButton(icon: const Icon(Icons.group), onPressed: () async {
+             widget.onNavigateFriends();
+             fetchPosts();
+
+          }),
+          IconButton(icon: const Icon(Icons.person), onPressed: () {
+            widget.onNavigateProfile();
+            fetchPosts();
+          }),
           IconButton(icon: const Icon(Icons.logout), onPressed: widget.onLogout),
         ],
       ),
@@ -196,47 +277,15 @@ class _HomePageState extends State<HomePage> {
             if (loading && posts.isEmpty)
               const Center(child: CircularProgressIndicator()),
 
-            ...posts.map((post) => Card(
-              margin: const EdgeInsets.only(bottom: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ListTile(
-                    leading: const CircleAvatar(child: Icon(Icons.person)),
-                    title: Text(post.userEmail),
-                    subtitle: Text(formatDate(post.createdAt.toString())),
-                    trailing: myPostIds.contains(post.id)
-                        ? IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () => handleDelete(post),
-                    )
-                        : null,
-                  ),
-                  post.filepath.endsWith('.mp4')
-                      ? VideoPlayerWidget(url: 'http://192.168.100.6:5000/uploads/${post.filepath}')
-                      : Image.network(
-                    'http://192.168.100.6:5000/uploads/${post.filepath}',
-                    height: 200,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton.icon(
-                        onPressed: () => toggleLike(post),
-                        icon: Icon(
-                          post.userLiked == 1 ? Icons.favorite : Icons.favorite_border,
-                          color: post.userLiked == 1 ? Colors.red : null,
-                        ),
-                        label: Text('${post.likeCount} likes'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+            ...posts.map((post) => PostCard(
+              key: ValueKey(post.id),
+              post: post,
+              onLikeToggle: () => toggleLike(post),
+              onDelete: myPostIds.contains(post.id) ? () => handleDelete(post) : null,
+              showDelete: myPostIds.contains(post.id),
+              userEmail: post.userEmail,
             )),
+
 
           ],
         ),

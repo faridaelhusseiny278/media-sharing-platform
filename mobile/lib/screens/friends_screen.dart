@@ -151,17 +151,13 @@ class _FriendsScreenState extends State<FriendsScreen> {
                   searchController.clear();
                   setState(() {
                     searchQuery = '';
-                    searchResults = [];
+                    getAllUsers(); // Refresh all users on clear
                   });
                 },
               ),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
             ),
           ),
-        ),
-        ElevatedButton(
-          onPressed: getAllUsers,
-          child: const Text('Show All Users'),
         ),
         Expanded(
           child: searchResults.isEmpty
@@ -174,6 +170,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
       ],
     );
   }
+
 
   @override
   Widget build(BuildContext context) {

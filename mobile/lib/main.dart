@@ -4,6 +4,9 @@ import 'package:media_sharing_app/screens/login_page.dart';
 import 'package:media_sharing_app/screens/friends_screen.dart';
 import 'package:media_sharing_app/screens/profile_screen.dart';
 import 'package:media_sharing_app/screens/register_page.dart';
+final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
+
+
 
 void main() {
   runApp(MediaApp());
@@ -20,16 +23,21 @@ class MediaApp extends StatelessWidget {
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
       debugShowCheckedModeBanner: false,
-
+      navigatorObservers: [routeObserver],
       // ✅ Start with login screen
       initialRoute: '/login',
 
       routes: {
         '/': (context) => HomePage(
-          onNavigateFriends: () => Navigator.pushNamed(context, '/friends'),
-          onNavigateProfile: () => Navigator.pushNamed(context, '/profile'),
+          onNavigateFriends: () async {
+            await Navigator.pushNamed(context, '/friends');
+          },
+          onNavigateProfile: () async {
+            await Navigator.pushNamed(context, '/profile');
+          },
           onLogout: () => Navigator.pushReplacementNamed(context, '/login'),
         ),
+
         '/login': (context) => LoginPage(
           onLogin: () {
             // After login, navigate to home

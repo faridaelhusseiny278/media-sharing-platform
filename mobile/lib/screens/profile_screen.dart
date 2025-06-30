@@ -50,6 +50,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       final data = await postService.getMyPosts();
       // Assuming stats are not available from getMyPosts() anymore.
+      data.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       setState(() {
         posts = data;
         totalPosts = data.length;
@@ -61,10 +62,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() => isLoading = false);
     }
   }
+  Future<void> toggleLike(Post post) async {
+    try {
+      if (post.userLiked == 1) {
+        await likeService.unlikePost(post.id);
+      } else {
+        await likeService.likePost(post.id);
+      }
+
+      if (activeTab == 'posts') {
+        fetchUserPosts();
+      } else {
+        fetchLikedPosts(updateList: true);
+      }
+    } catch (e) {
+      setState(() => error = "Failed to toggle like: ${e.toString()}");
+    }
+  }
 
   Future<void> fetchLikedPosts({bool updateList = false}) async {
     try {
       final data = await postService.getLikedPosts();
+      data.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       setState(() {
         totalLikedPosts = data.length;
         if (updateList) {
@@ -199,31 +218,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return ListView.builder(
       padding: const EdgeInsets.all(12),
       itemCount: posts.length,
-      itemBuilder: (context, index) => PostCard(
-        post: posts[index],
-        onLikeToggle: () async {
-          try {
-            await likeService.likePost(posts[index].id);
-            if (activeTab == 'posts') {
-              fetchUserPosts();
-            } else {
-              fetchLikedPosts();
+      itemBuilder: (context, index) {
+        final post = posts[index];
+
+        return PostCard(
+          key: ValueKey(post.id),
+          post: post,
+          onLikeToggle: () => toggleLike(post),
+          onDelete: activeTab == 'posts'
+              ? () async {
+            try {
+              await postService.deletePost(post.id);
+              fetchUserPosts(); // refresh
+            } catch (e) {
+              setState(() => error = "Failed to delete post");
             }
-          } catch (e) {
-            setState(() => error = "Failed to toggle like");
           }
-        },
-        onDelete: activeTab == 'posts'
-            ? () async {
-          try {
-            await postService.deletePost(posts[index].id);
-            fetchUserPosts(); // refresh
-          } catch (e) {
-            setState(() => error = "Failed to delete post");
-          }
-        }
-            : null, // disable delete button in liked tab
-      ),
+              : null,
+          showDelete: activeTab == 'posts', // true only for user's own posts
+          userEmail: post.userEmail, // show the email
+        );
+      },
     );
+
   }
 }
