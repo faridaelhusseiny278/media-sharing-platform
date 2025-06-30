@@ -22,19 +22,28 @@ export default function Home({ onNavigateFriends, onNavigateProfile }: HomeProps
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { logout } = useAuth();
+  const { logout, currentUser } = useAuth();
+  const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
 
   const fetchPosts = async () => {
     try {
       setLoading(true);
       const response = await api.get('/posts');
-      setPosts(response.data);
+  
+      const sortedPosts = response.data.sort(
+        (a: Post, b: Post) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+  
+      setPosts(sortedPosts);
     } catch (error: any) {
       setError(error.response?.data?.error || 'Failed to fetch posts');
     } finally {
       setLoading(false);
     }
   };
+  
 
   useEffect(() => {
     fetchPosts();
@@ -58,24 +67,66 @@ export default function Home({ onNavigateFriends, onNavigateProfile }: HomeProps
       setError(error.response?.data?.error || 'Failed to upload file');
     } finally {
       setLoading(false);
+      setPreviewUrl(null);
+
     }
   };
 
   const handleLike = async (postId: number) => {
+    setPosts(prevPosts =>
+      prevPosts.map(post =>
+        post.id === postId
+          ? { ...post, userLiked: 1, likeCount: post.likeCount + 1 }
+          : post
+      )
+    );
+  
     try {
       await api.post('/likes/like', { postId });
-      fetchPosts();
     } catch (error: any) {
+      // Revert UI if failed
+      setPosts(prevPosts =>
+        prevPosts.map(post =>
+          post.id === postId
+            ? { ...post, userLiked: 0, likeCount: post.likeCount - 1 }
+            : post
+        )
+      );
       setError(error.response?.data?.error || 'Failed to like post');
     }
   };
+  
 
   const handleUnlike = async (postId: number) => {
+    setPosts(prevPosts =>
+      prevPosts.map(post =>
+        post.id === postId
+          ? { ...post, userLiked: 0, likeCount: post.likeCount - 1 }
+          : post
+      )
+    );
+  
     try {
       await api.post('/likes/unlike', { postId });
-      fetchPosts();
     } catch (error: any) {
+      // Revert UI if failed
+      setPosts(prevPosts =>
+        prevPosts.map(post =>
+          post.id === postId
+            ? { ...post, userLiked: 1, likeCount: post.likeCount + 1 }
+            : post
+        )
+      );
       setError(error.response?.data?.error || 'Failed to unlike post');
+    }
+  };
+  
+  const handleDeletePost = async (postId: number) => {
+    try {
+      await api.delete(`/posts/${postId}`);
+      setPosts(prev => prev.filter(post => post.id !== postId));
+    } catch (error: any) {
+      setError(error.response?.data?.error || 'Failed to delete post');
     }
   };
 
@@ -161,12 +212,38 @@ export default function Home({ onNavigateFriends, onNavigateProfile }: HomeProps
           
           <div className="space-y-4">
             <div className="relative">
-              <input
-                type="file"
-                accept="image/*,video/*"
-                onChange={(e) => setFile(e.target.files?.[0] || null)}
-                className="w-full p-4 border-2 border-dashed border-gray-300 rounded-xl hover:border-blue-400 transition-colors duration-200 cursor-pointer"
-              />
+            <input
+              type="file"
+              accept="image/*,video/*"
+              onChange={(e) => {
+                const selectedFile = e.target.files?.[0] || null;
+                setFile(selectedFile);
+                if (selectedFile) {
+                  setPreviewUrl(URL.createObjectURL(selectedFile));
+                } else {
+                  setPreviewUrl(null);
+                }
+              }}
+              className="w-full p-4 border-2 border-dashed border-gray-300 rounded-xl hover:border-blue-400 transition-colors duration-200 cursor-pointer"
+            />
+            {previewUrl && (
+            <div className="mt-4">
+              {file?.type.startsWith('video') ? (
+                <video
+                  src={previewUrl}
+                  controls
+                  className="w-full h-64 object-cover rounded-xl border"
+                />
+              ) : (
+                <img
+                  src={previewUrl}
+                  alt="Preview"
+                  className="w-full h-64 object-cover rounded-xl border"
+                />
+              )}
+            </div>
+          )}
+
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div className="text-center">
                   <span className="text-gray-400 text-2xl mb-2 block">📷</span>
@@ -233,10 +310,11 @@ export default function Home({ onNavigateFriends, onNavigateProfile }: HomeProps
                     />
                   ) : (
                     <img
-                      src={`http://localhost:5000/uploads/${post.filepath}`}
-                      alt="media"
-                      className="w-full h-80 object-cover"
-                    />
+                        src={`http://localhost:5000/uploads/${post.filepath}`}
+                        alt="media"
+                        className="w-full h-80 object-cover cursor-pointer transition-transform hover:scale-105"
+                        onClick={() => setFullscreenImage(`http://localhost:5000/uploads/${post.filepath}`)}
+                      />
                   )}
                   <div className="absolute top-3 right-3">
                     {post.filepath.endsWith('.mp4') ? (
@@ -269,6 +347,19 @@ export default function Home({ onNavigateFriends, onNavigateProfile }: HomeProps
                         <span>{post.likeCount} {post.likeCount === 1 ? 'like' : 'likes'}</span>
                       </button>
                     </div>
+                    {currentUser?.id === post.user_id && (
+                    <button
+                    onClick={() => {
+                      const confirmed = window.confirm('Are you sure you want to delete this post?');
+                      if (confirmed) {
+                        handleDeletePost(post.id);
+                      }
+                    }}
+                    className="text-sm text-red-500 hover:text-red-700 px-3 py-1 bg-red-50 rounded-lg hover:bg-red-100 transition-all duration-200"
+                  >
+                    🗑 Delete
+                  </button>
+                  )}
                   </div>
                 </div>
               </div>
@@ -286,7 +377,28 @@ export default function Home({ onNavigateFriends, onNavigateProfile }: HomeProps
             <p className="text-gray-500">Be the first to share something amazing!</p>
           </div>
         )}
+        </div>
+          {fullscreenImage && (
+            <div
+              className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center"
+              onClick={() => setFullscreenImage(null)}
+            >
+              <img
+                src={fullscreenImage}
+                alt="fullscreen"
+                className="max-w-full max-h-full object-contain"
+              />
+              <button
+                className="absolute top-4 right-4 text-white text-3xl"
+                onClick={() => setFullscreenImage(null)}
+              >
+                ✖
+              </button>
+            </div>
+          )}
+
       </div>
-    </div>
+    
   );
+  
 }

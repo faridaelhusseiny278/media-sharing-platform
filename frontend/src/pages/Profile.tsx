@@ -7,8 +7,8 @@ interface Post {
   user_id: number;
   filepath: string;
   created_at: string;
-  likes_count: number;
-  is_liked: boolean;
+  likeCount: number;
+  userLiked: boolean;
   user_email: string;
 }
 
@@ -29,13 +29,19 @@ export default function Profile({ onNavigateHome, onNavigateFriends }: ProfilePr
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'posts' | 'liked'>('posts');
-  const { logout } = useAuth();
+  const { logout, currentUser } = useAuth();
 
   const fetchUserPosts = async () => {
     try {
       setLoading(true);
       const response = await api.get('/posts/my-posts');
-      setPosts(response.data.posts);
+  
+      // Sort posts by created_at in descending order (newest first)
+      const sortedPosts = response.data.posts.sort(
+        (a: Post, b: Post) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+  
+      setPosts(sortedPosts);
       setStats(response.data.stats);
     } catch (error: any) {
       setError(error.response?.data?.error || 'Failed to fetch posts');
@@ -43,12 +49,16 @@ export default function Profile({ onNavigateHome, onNavigateFriends }: ProfilePr
       setLoading(false);
     }
   };
+  
 
   const fetchLikedPosts = async () => {
     try {
       setLoading(true);
       const response = await api.get('/posts/liked-posts');
-      setPosts(response.data);
+      const sortedPosts = response.data.sort(
+        (a: Post, b: Post) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+      setPosts(sortedPosts);
     } catch (error: any) {
       setError(error.response?.data?.error || 'Failed to fetch liked posts');
     } finally {
@@ -56,19 +66,32 @@ export default function Profile({ onNavigateHome, onNavigateFriends }: ProfilePr
     }
   };
 
-  const toggleLike = async (postId: number) => {
+ const handleLike = async (postId: number) => {
     try {
-      await api.post('/likes/toggle', { postId });
-      // Refresh the current view
-      if (activeTab === 'posts') {
-        fetchUserPosts();
-      } else {
-        fetchLikedPosts();
-      }
+      await api.post('/likes/like', { postId });
+      fetchUserPosts();
     } catch (error: any) {
-      setError(error.response?.data?.error || 'Failed to toggle like');
+      setError(error.response?.data?.error || 'Failed to like post');
     }
   };
+  const handleDeletePost = async (postId: number) => {
+    try {
+      await api.delete(`/posts/${postId}`);
+      setPosts(prev => prev.filter(post => post.id !== postId));
+    } catch (error: any) {
+      setError(error.response?.data?.error || 'Failed to delete post');
+    }
+  };
+
+  const handleUnlike = async (postId: number) => {
+    try {
+      await api.post('/likes/unlike', { postId });
+      fetchUserPosts();
+    } catch (error: any) {
+      setError(error.response?.data?.error || 'Failed to unlike post');
+    }
+  };
+
 
   useEffect(() => {
     fetchUserPosts();
@@ -266,16 +289,29 @@ export default function Profile({ onNavigateHome, onNavigateFriends }: ProfilePr
                   {/* Like Button */}
                   <div className="flex items-center justify-between">
                     <button
-                      onClick={() => toggleLike(post.id)}
+                      onClick={() => post.userLiked ? handleUnlike(post.id) : handleLike(post.id)}
                       className={`flex items-center space-x-2 px-3 py-1 rounded-lg transition-colors duration-200 ${
-                        post.is_liked
+                        post.userLiked
                           ? 'bg-red-50 text-red-600 hover:bg-red-100'
                           : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
                       }`}
                     >
-                      <span>{post.is_liked ? '❤️' : '🤍'}</span>
-                      <span>{post.likes_count}</span>
+                      <span>{post.userLiked ? '❤️' : '🤍'}</span>
+                      <span>{post.likeCount}</span>
                     </button>
+                    {(activeTab === 'posts' || (activeTab === 'liked' && post.user_id === currentUser?.id)) && (
+                      <button
+                        onClick={() => {
+                          const confirmDelete = window.confirm('Are you sure you want to delete this post?');
+                          if (confirmDelete) {
+                            handleDeletePost(post.id);
+                          }
+                        }}
+                        className="text-sm text-red-500 hover:text-red-700 px-3 py-1 bg-red-50 rounded-lg hover:bg-red-100 transition-all duration-200"
+                      >
+                        🗑 Delete
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

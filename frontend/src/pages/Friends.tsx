@@ -93,12 +93,11 @@ export default function Friends({ onNavigateHome, onNavigateProfile }: FriendsPr
   }, []);
 
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      searchUsers(searchQuery);
-    }, 300);
-
-    return () => clearTimeout(timeoutId);
-  }, [searchQuery]);
+    if (activeTab === 'search' && !searchQuery.trim()) {
+      getAllUsers();
+    }
+  }, [activeTab, searchQuery]);
+  
 
   const handleLogout = () => {
     logout();
@@ -270,12 +269,7 @@ export default function Friends({ onNavigateHome, onNavigateProfile }: FriendsPr
                 />
                 
                 <div className="flex space-x-2">
-                  <button
-                    onClick={getAllUsers}
-                    className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors duration-200 text-sm"
-                  >
-                    Show All Users
-                  </button>
+                 
                   {searchQuery && (
                     <button
                       onClick={() => {
