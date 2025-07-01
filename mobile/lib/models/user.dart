@@ -9,7 +9,7 @@ class User {
     return User(
       id: json['id'],
       email: json['email'],
-      password: json['password'], // Might be null or omitted
+      // password: json['password'], // Might be null or omitted
       token: json['token'] ?? '', // Optional token, default to empty string
     );
   }
@@ -18,7 +18,7 @@ class User {
     return {
       'id': id,
       'email': email,
-      if (password != null) 'password': password,
+      // if (password != null) 'password': password,
       if (token.isNotEmpty) 'token': token, // Include token only if it's not empty
     };
   }

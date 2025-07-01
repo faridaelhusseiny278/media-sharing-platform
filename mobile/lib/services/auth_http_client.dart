@@ -3,9 +3,11 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'dart:io';
+import 'package:media_sharing_app/config.dart';
+
 
 class ApiClient {
-  final String baseUrl = 'http://192.168.100.6:5000/api';
+final String baseUrl = globalBaseUrl + '/api';
 
   Future<Map<String, String>> _getHeaders() async {
     final prefs = await SharedPreferences.getInstance();

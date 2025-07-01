@@ -1,14 +1,19 @@
+// backend/models/index.ts
 import { Sequelize } from 'sequelize';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
 
 const sequelize = new Sequelize(
-  'media_app',           // database name
-  'root',                // username
-  'Deda2782002!',        // password
+  process.env.DB_NAME as string,
+  process.env.DB_USER as string,
+  process.env.DB_PASSWORD,
   {
-    host: 'localhost',
-    port: 3306,
-    dialect: 'mysql',
-    logging: false, // set to true if you want to debug SQL
+    host: process.env.DB_HOST,
+    port: Number(process.env.DB_PORT) || 3306,
+    dialect: 'mysql', // explicitly set the dialect
+    logging: false,
   }
 );
 

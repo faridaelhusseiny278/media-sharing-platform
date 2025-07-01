@@ -17,7 +17,7 @@ export const removeFriend = async (userId: number, friendId: number) => {
 
 export const getFriends = async (userId: number) => {
   const [rows] = await db.execute(
-    `SELECT u.* FROM users u 
+    `SELECT u.id, u.email FROM users u 
      JOIN friends f ON u.id = f.friend_id 
      WHERE f.user_id = ?`,
     [userId]
@@ -27,7 +27,7 @@ export const getFriends = async (userId: number) => {
 
 export const areFriends = async (userId: number, friendId: number) => {
   const [rows] = await db.execute(
-    "SELECT * FROM friends WHERE user_id = ? AND friend_id = ?",
+    "SELECT u.id, u.email FROM friends WHERE user_id = ? AND friend_id = ?",
     [userId, friendId]
   );
   return (rows as any[]).length > 0;
@@ -37,14 +37,14 @@ export const searchUsers = async (userId: number, query: string) => {
   const [rows] = await db.execute(`
     SELECT u.id, u.email
     FROM users u
-    WHERE u.email LIKE ? 
+    LEFT JOIN friends f ON u.id = f.friend_id AND f.user_id = ?
+    WHERE u.email LIKE ?
       AND u.id != ?
-      AND u.id NOT IN (
-        SELECT friend_id FROM friends WHERE user_id = ?
-      )
+      AND f.friend_id IS NULL
     ORDER BY u.email ASC
     LIMIT 10
-  `, [`%${query}%`, userId, userId]);
+  `, [userId, `${query}%`, userId]);
+  
   
   return rows;
 };

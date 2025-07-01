@@ -39,21 +39,13 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [token, setToken] = useState<string | null>(
-    localStorage.getItem('token')
-  );
-  const [currentUser, setCurrentUser] = useState<DecodedToken | null>(() => {
-    const storedToken = localStorage.getItem('token');
-    if (storedToken) {
-      try {
-        return jwtDecode<DecodedToken>(storedToken);
+  // Clear any existing token on app start to force login screen
+  useEffect(() => {
+    localStorage.removeItem('token');
+  }, []);
 
-      } catch (e) {
-        return null;
-      }
-    }
-    return null;
-  });
+  const [token, setToken] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<DecodedToken | null>(null);
 
   const login = (newToken: string) => {
     setToken(newToken);

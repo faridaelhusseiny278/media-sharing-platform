@@ -5,21 +5,50 @@ import bcrypt from 'bcryptjs';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
+import validator from 'validator'; 
+
 export const register = async (req: Request, res: Response): Promise<void> => {
   const { email, password } = req.body;
+
+  // Basic empty field check
+  if (!email || !password) {
+    res.status(400).json({ error: 'Email and password are required.' });
+    return;
+  }
+
+  // Email format validation
+  // const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  // if (!emailRegex.test(email)) {
+  //   res.status(400).json({ error: 'Invalid email format.' });
+  //   return;
+  // }
+
+  // OR use a robust validator library (optional)
+  if (!validator.isEmail(email)) {
+    res.status(400).json({ error: 'Invalid email address.' });
+    return;
+  }
+
+  // Password strength (optional but good practice)
+  if (password.length < 6) {
+    res.status(400).json({ error: 'Password must be at least 6 characters long.' });
+    return;
+  }
+
   try {
     const existingUser = await UserModel.getUserByEmail(email);
     if (existingUser) {
-      res.status(400).json({ error: 'User already exists' });
+      res.status(400).json({ error: 'User already exists.' });
       return;
     }
 
     await UserModel.createUser(email, password);
-    res.status(201).json({ message: 'User created' });
+    res.status(201).json({ message: 'User created successfully.' });
   } catch (error) {
-    res.status(500).json({ error: 'Registration error' });
+    res.status(500).json({ error: 'Registration failed. Please try again later.' });
   }
 };
+
 
 export const login = async (req: Request, res: Response): Promise<void> => {
   const { email, password } = req.body;
@@ -30,12 +59,10 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       res.status(401).json({ error: 'Invalid credentials' });
       return;
     }
-    console.log("Stored hash from DB:", user.password);
-    console.log("Password entered:", password);
+
 
 
     const valid = await bcrypt.compare(password, user.password);
-    console.log('Password valid:', valid); // Debugging line
     if (!valid) {
       res.status(401).json({ error: 'Invalid credentials' });
       return;

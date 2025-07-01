@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:media_sharing_app/models/post.dart';
 import 'package:media_sharing_app/widgets/video_player.dart';
 import 'package:media_sharing_app/widgets/full_screen_viewer.dart';
+import 'package:media_sharing_app/config.dart';
 
 class PostCard extends StatefulWidget {
   final Post post;
@@ -29,7 +30,7 @@ class PostCard extends StatefulWidget {
 class _PostCardState extends State<PostCard> {
   File? _videoFile;
   bool _isLoadingVideo = false;
-  final String baseUrl = 'http://192.168.100.6:5000/uploads/';
+  final String baseUrl = globalBaseUrl + '/uploads/';
 
   @override
   void initState() {
