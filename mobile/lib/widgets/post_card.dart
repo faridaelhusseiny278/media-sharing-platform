@@ -84,7 +84,9 @@ class _PostCardState extends State<PostCard> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isVideo = widget.post.filepath.endsWith('.mp4') || widget.post.filepath.endsWith('.mov')  || widget.post.filepath.endsWith('.avi');
+    final bool isVideo = widget.post.filepath.endsWith('.mp4') ||
+        widget.post.filepath.endsWith('.mov') ||
+        widget.post.filepath.endsWith('.avi');
 
     return Card(
       elevation: 3,
@@ -93,7 +95,7 @@ class _PostCardState extends State<PostCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          /// 👤 User info
+          // 👤 User Info
           ListTile(
             leading: const CircleAvatar(child: Icon(Icons.person)),
             title: Text(widget.userEmail),
@@ -111,8 +113,13 @@ class _PostCardState extends State<PostCard> {
                     title: const Text('Are you sure?'),
                     content: const Text('This post will be permanently deleted.'),
                     actions: [
-                      TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-                      TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete', style: TextStyle(color: Colors.red))),
+                      TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Cancel')),
+                      TextButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          child: const Text('Delete',
+                              style: TextStyle(color: Colors.red))),
                     ],
                   ),
                 );
@@ -124,16 +131,16 @@ class _PostCardState extends State<PostCard> {
                 : null,
           ),
 
-          /// 📸 or 📹 Media preview
+          // 📸 or 📹 Media preview
           GestureDetector(
             onTap: () {
-              if (isVideo && _videoFile != null) {
+              if (isVideo) {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (_) => FullScreenViewer(
-                      mediaFile: _videoFile!,
                       isVideo: true,
+                      mediaUrl: '$baseUrl${widget.post.filepath}',
                     ),
                   ),
                 );
@@ -150,18 +157,13 @@ class _PostCardState extends State<PostCard> {
               }
             },
             child: isVideo
-                ? (_isLoadingVideo
-                ? const SizedBox(height: 200, child: Center(child: CircularProgressIndicator()))
-                : (_videoFile != null
                 ? SizedBox(
               height: 200,
               width: double.infinity,
-              child: VideoPlayerWidget(file: _videoFile!),
+              child: VideoPlayerWidget(
+                url: '$baseUrl${widget.post.filepath}',
+              ),
             )
-                : const SizedBox(
-              height: 200,
-              child: Center(child: Text('Failed to load video')),
-            )))
                 : Image.network(
               '$baseUrl${widget.post.filepath}',
               width: double.infinity,
@@ -176,15 +178,18 @@ class _PostCardState extends State<PostCard> {
             ),
           ),
 
-          /// ❤️ Likes
+          // ❤️ Likes
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Row(
               children: [
                 IconButton(
                   icon: Icon(
-                    widget.post.userLiked == 1 ? Icons.favorite : Icons.favorite_border,
-                    color: widget.post.userLiked == 1 ? Colors.red : Colors.grey,
+                    widget.post.userLiked == 1
+                        ? Icons.favorite
+                        : Icons.favorite_border,
+                    color:
+                    widget.post.userLiked == 1 ? Colors.red : Colors.grey,
                   ),
                   onPressed: widget.onLikeToggle,
                 ),

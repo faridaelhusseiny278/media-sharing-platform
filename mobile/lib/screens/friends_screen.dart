@@ -200,7 +200,12 @@ class _FriendsScreenState extends State<FriendsScreen> {
           ToggleButtons(
             isSelected: [isFriendsTab, !isFriendsTab],
             onPressed: (index) {
-              setState(() => activeTab = index == 0 ? 'friends' : 'search');
+            setState(() {
+            activeTab = index == 0 ? 'friends' : 'search';
+            });
+            if (index == 1 && searchQuery.isEmpty && searchResults.isEmpty) {
+              getAllUsers();
+            }
             },
             children: const [
               Padding(

@@ -4,12 +4,14 @@ import 'package:media_sharing_app/widgets/video_player.dart';
 
 class FullScreenViewer extends StatelessWidget {
   final File? mediaFile;
+  final String? mediaUrl;
   final String? imageUrl;
   final bool isVideo;
 
   const FullScreenViewer({
     super.key,
     this.mediaFile,
+    this.mediaUrl,
     this.imageUrl,
     required this.isVideo,
   });
@@ -24,17 +26,20 @@ class FullScreenViewer extends StatelessWidget {
       ),
       body: Center(
         child: isVideo
-            ? VideoPlayerWidget(file: mediaFile!)
+            ? VideoPlayerWidget(
+          file: mediaFile,
+          url: mediaUrl,
+        )
             : InteractiveViewer(
           child: Image.network(
             imageUrl!,
             fit: BoxFit.contain,
             errorBuilder: (context, error, stackTrace) =>
-            const Text("Failed to load media", style: TextStyle(color: Colors.white)),
+            const Text("Failed to load media",
+                style: TextStyle(color: Colors.white)),
           ),
         ),
       ),
     );
   }
 }
-
